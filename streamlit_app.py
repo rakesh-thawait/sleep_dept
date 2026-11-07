@@ -1,93 +1,98 @@
+import streamlit as st
 import pandas as pd
 import numpy as np
-import os
 import joblib
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef, roc_auc_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef, roc_auc_score, confusion_matrix, classification_report
 
-# 1. Load data (Assuming your data is saved as sleep_dataset.csv)
-df = pd.read_csv('bedtime_screentime_sleep_debt.csv')
+st.set_page_type = "wide"
+st.title("💤 Sleep Debt Risk Classification Dashboard")
+st.write("Upload your test dataset to evaluate and compare 5 distinct Machine Learning classifiers.")
 
-# Drop identifier
-df = df.drop(columns=['user_id'])
+# Sidebar Configuration
+st.sidebar.header("Configuration Panel")
+uploaded_file = st.sidebar.file_uploader("Upload Test CSV (test_data.csv)", type=["csv"])
 
-# 2. Encode Categorical Features
-categorical_cols = ['gender', 'occupation_type', 'chronotype', 'primary_bedtime_app']
-label_encoders = {}
-for col in categorical_cols:
-    le = LabelEncoder()
-    df[col] = le.fit_transform(df[col])
-    label_encoders[col] = le
+model_choice = st.sidebar.selectbox(
+    "Choose ML Classifier",
+    ["Logistic Regression", "Decision Tree", "KNN", "Naive Bayes", "Support Vector Machine"]
+)
 
-# Encode Target
-target_le = LabelEncoder()
-df['sleep_debt_category'] = target_le.fit_transform(df['sleep_debt_category'])
+# Load pipeline dependencies safely
+@st.cache_resource
+def load_artifacts():
+    scaler = joblib.load('model/scaler.joblib')
+    target_le = joblib.load('model/target_encoder.joblib')
+    return scaler, target_le
 
-# 3. Features and Target Split
-X = df.drop(columns=['sleep_debt_category'])
-y = df['sleep_debt_category']
+try:
+    scaler, target_le = load_artifacts()
+except Exception as e:
+    st.error("Model artifacts missing. Please ensure the 'model/' directory is populated inside your repository.")
+    st.stop()
 
-# Split train/test (saving test data for your Streamlit app upload)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-
-# Save the test data to a CSV as requested by the assignment
-test_df = X_test.copy()
-test_df['sleep_debt_category'] = y_test
-test_df.to_csv('test_data.csv', index=False)
-
-# 4. Scale Numeric Features
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-# Create model directory
-os.makedirs('model', exist_ok=True)
-joblib.dump(scaler, 'model/scaler.joblib')
-joblib.dump(label_encoders, 'model/label_encoders.joblib')
-joblib.dump(target_le, 'model/target_encoder.joblib')
-
-# 5. Initialize Models
-models = {
-    'Logistic Regression': LogisticRegression(max_iter=1000, multi_class='ovr'),
-    'Decision Tree': DecisionTreeClassifier(random_state=42),
-    'KNN': KNeighborsClassifier(),
-    'Naive Bayes': GaussianNB(),
-    'Support Vector Machine': SVC(probability=True, random_state=42)
-}
-
-# 6. Train and Evaluate
-results = []
-for name, model in models.items():
-    model.fit(X_train_scaled, y_train)
-    preds = model.predict(X_test_scaled)
-    probs = model.predict_proba(X_test_scaled)
+if uploaded_file is not None:
+    # Process test data without retraining
+    test_df = pd.read_csv(uploaded_file)
     
-    # Calculate metrics
-    acc = accuracy_score(y_test, preds)
-    prec = precision_score(y_test, preds, average='macro', zero_division=0)
-    rec = recall_score(y_test, preds, average='macro')
-    f1 = f1_score(y_test, preds, average='macro')
-    mcc = matthews_corrcoef(y_test, preds)
-    auc = roc_auc_score(y_test, probs, average='macro', multi_class='ovr')
-    
-    results.append({
-        'ML Model Name': name,
-        'Accuracy': round(acc, 4),
-        'AUC': round(auc, 4),
-        'Precision': round(prec, 4),
-        'Recall': round(rec, 4),
-        'F1': round(f1, 4),
-        'MCC': round(mcc, 4)
-    })
-    
-    # Save trained model artifact
-    joblib.dump(model, f'model/{name.lower().replace(" ", "_")}.joblib')
-
-# Print out evaluation summary matrix for your README
-print(pd.DataFrame(results).to_markdown(index=False))
+    if 'sleep_debt_category' not in test_df.columns:
+        st.error("The uploaded file must contain the target label column: 'sleep_debt_category'")
+    else:
+        # Separate features and target
+        X_test = test_df.drop(columns=['sleep_debt_category'])
+        y_test = test_df['sleep_debt_category']
+        
+        # Strip user_id if present
+        if 'user_id' in X_test.columns:
+            X_test = X_test.drop(columns=['user_id'])
+            
+        # Transform structural numeric representations
+        X_test_scaled = scaler.transform(X_test)
+        
+        # Load Selected Model dynamically
+        model_filename = f"model/{model_choice.lower().replace(' ', '_')}.joblib"
+        model = joblib.load(model_filename)
+        
+        # Inference Generation
+        preds = model.predict(X_test_scaled)
+        probs = model.predict_proba(X_test_scaled)
+        
+        # Compute core metrics
+        acc = accuracy_score(y_test, preds)
+        prec = precision_score(y_test, preds, average='macro', zero_division=0)
+        rec = recall_score(y_test, preds, average='macro')
+        f1 = f1_score(y_test, preds, average='macro')
+        mcc = matthews_corrcoef(y_test, preds)
+        auc = roc_auc_score(y_test, probs, average='macro', multi_class='ovr')
+        
+        # Layout metrics layout visually
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Accuracy Score", f"{acc:.4f}")
+        col2.metric("AUC Metric", f"{auc:.4f}")
+        col3.metric("F1-Score (Macro)", f"{f1:.4f}")
+        
+        col4, col5, col6 = st.columns(3)
+        col4.metric("Precision", f"{prec:.4f}")
+        col5.metric("Recall Rate", f"{rec:.4f}")
+        col6.metric("MCC Score", f"{mcc:.4f}")
+        
+        # Diagnostics Report Plots
+        st.subheader(f"Performance Architecture: {model_choice}")
+        
+        tab1, tab2 = st.tabs(["Confusion Matrix Map", "Classification Report Text"])
+        
+        with tab1:
+            cm = confusion_matrix(y_test, preds)
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                        xticklabels=target_le.classes_, yticklabels=target_le.classes_, ax=ax)
+            plt.ylabel('Actual Category')
+            plt.xlabel('Predicted Category')
+            st.pyplot(fig)
+            
+        with tab2:
+            report = classification_report(y_test, preds, target_names=target_le.classes_, output_dict=False)
+            st.code(report)
+else:
+    st.info("💡 Please upload the generated 'test_data.csv' via the sidebar profile panel to begin analysis.")
