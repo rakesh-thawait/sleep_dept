@@ -52,6 +52,19 @@ if uploaded_file is not None:
             if col in X_test.columns:
                 X_test = X_test.drop(columns=[col])            
             
+        expected_columns = list(scaler.feature_names_in_)
+        missing_columns = sorted(set(expected_columns) - set(X_test.columns))
+        unexpected_columns = sorted(set(X_test.columns) - set(expected_columns))
+        if missing_columns or unexpected_columns:
+            st.error(
+                "Uploaded features do not match the saved model. "
+                f"Missing: {missing_columns}; unexpected: {unexpected_columns}. "
+                "Regenerate and deploy the model artifacts and test data together."
+            )
+            st.stop()
+
+        X_test = X_test.loc[:, expected_columns]
+
         # Transform structural numeric representations
         X_test_scaled = scaler.transform(X_test)
         
