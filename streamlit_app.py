@@ -46,6 +46,11 @@ if uploaded_file is not None:
         # Strip user_id if present
         if 'user_id' in X_test.columns:
             X_test = X_test.drop(columns=['user_id'])
+
+        leakage_columns = ['next_day_fatigue_score', 'total_sleep_hours']
+        for col in leakage_columns:
+            if col in X_test.columns:
+                X_test = X_test.drop(columns=[col])            
             
         # Transform structural numeric representations
         X_test_scaled = scaler.transform(X_test)
