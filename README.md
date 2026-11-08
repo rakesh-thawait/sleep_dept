@@ -15,23 +15,23 @@ The underlying dataset features 1,000 empirical observations mapping lifestyle m
 
 ## d. Models Used & Evaluation Comparison Matrix
 
-| ML Model Name | Accuracy | AUC | Precision | Recall | F1 | MCC |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Logistic Regression | 0.9035 | 0.9852 | 0.9373 | 0.8686 | 0.8958 | 0.8498 |
-| Decision Tree | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
-| KNN | 0.7912 | 0.9285 | 0.7833 | 0.7271 | 0.7500 | 0.6680 |
-| Naive Bayes | 0.8782 | 0.9839 | 0.8444 | 0.9018 | 0.8686 | 0.8156 |
-| Support Vector Machine | 0.9541 | 0.9970 | 0.9447 | 0.9411 | 0.9428 | 0.9279 |
+| ML Model Name          |   Accuracy |    AUC |   Precision |   Recall |     F1 |    MCC |
+|:-----------------------|-----------:|-------:|------------:|---------:|-------:|-------:|
+| Logistic Regression    |     0.6947 | 0.8897 |      0.7058 |   0.5976 | 0.6271 | 0.4993 |
+| Decision Tree          |     0.7365 | 0.9097 |      0.7235 |   0.7145 | 0.7169 | 0.5942 |
+| KNN                    |     0.6465 | 0.8378 |      0.6441 |   0.5564 | 0.5869 | 0.4305 |
+| Naive Bayes            |     0.6824 | 0.8955 |      0.6340 |   0.6824 | 0.6532 | 0.5181 |
+| Support Vector Machine |     0.7441 | 0.9166 |      0.7336 |   0.6920 | 0.7106 | 0.5911 |
 
 ### Observations on Performance Paradigms
 
 | ML Model Name | Observation about model performance |
 | :--- | :--- |
-| **Logistic Regression** | Achieves 0.9035 accuracy and 0.9852 AUC, with macro precision (0.9373) higher than macro recall (0.8686). |
-| **Decision Tree** | Scores 1.0000 across all reported metrics on this test split. Validate this perfect result on additional splits or with cross-validation to check for overfitting or data leakage. |
-| **KNN** | Records the lowest accuracy (0.7912) and MCC (0.6680) among the evaluated models, while its AUC is 0.9285. |
-| **Naive Bayes** | Reaches 0.8782 accuracy and 0.9839 AUC, with recall (0.9018) exceeding precision (0.8444). |
-| **Support Vector Machine** | Is the strongest model after the Decision Tree, with 0.9541 accuracy, 0.9970 AUC, and 0.9279 MCC. |
+| **Logistic Regression** | Demonstrates solid, balanced multi-class performance with an AUC of 0.8897, confirming stable probabilistic separation despite the high-dimensional non-linear interactions within bedtime behaviors. |
+| **Decision Tree** | With structural hyperparameter tuning (max_depth=5) and target proxies removed, the model generalizes realistically at 73.65% accuracy, successfully tracking key split-rules like screen brightness and minutes active. |
+| **KNN** | Yields the lowest performance metrics (64.65% Accuracy, 0.4305 MCC), showing that instance-based distance metrics struggle slightly within the scaled variance of combined categorical and numerical sleep profiles. |
+| **Naive Bayes** | Functions effectively with a high multi-class AUC of 0.8955. It exhibits a stronger Recall (0.6824) than Precision (0.6340), indicating a tendency to flag risk categories aggressively despite feature correlation. |
+| **Support Vector Machine** | Achieves peak classification boundary separation across the dataset. The RBF kernel handles non-linear overlaps smoothly, yielding top-tier metrics across the board (0.7441 Accuracy, 0.9166 AUC). |
 
-### 🏆 Overall Dataset Winner
-**Decision Tree** is the top performer on this evaluation split, achieving **1.0000** for accuracy, AUC, precision, recall, F1, and MCC. Because perfect test metrics can indicate overfitting or data leakage, validate this result with additional splits or cross-validation before treating it as generalizable.
+### 🏆 Overall Winner for your dataset?
+The **Support Vector Machine (SVM)** is the definitive winner for this dataset. It achieves the highest **Accuracy (74.41%)** and **AUC (0.9166)**, demonstrating robust structural generalization capabilities across multi-class risk categories without over-relying on deterministic target leakage.

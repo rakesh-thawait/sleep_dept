@@ -31,7 +31,10 @@ target_le = LabelEncoder()
 df['sleep_debt_category'] = target_le.fit_transform(df['sleep_debt_category'])
 
 # 3. Features and Target Split
-X = df.drop(columns=['sleep_debt_category'])
+# Drop target proxies to eliminate deterministic data leakage
+leakage_columns = ['next_day_fatigue_score', 'total_sleep_hours']
+
+X = df.drop(columns=['sleep_debt_category'] + leakage_columns)
 y = df['sleep_debt_category']
 
 # Split train/test (saving test data for your Streamlit app upload)
@@ -56,7 +59,12 @@ joblib.dump(target_le, 'model/target_encoder.joblib')
 # 5. Initialize Models
 models = {
     'Logistic Regression': OneVsRestClassifier(LogisticRegression(max_iter=1000)),
-    'Decision Tree': DecisionTreeClassifier(random_state=42),
+    'Decision Tree': DecisionTreeClassifier(
+        max_depth=5,              # Restricts the tree from growing too deep
+        min_samples_split=10,     # Requires at least 10 samples to split a node
+        min_samples_leaf=5,       # Requires at least 5 samples in a leaf node
+        random_state=42
+    ),
     'KNN': KNeighborsClassifier(),
     'Naive Bayes': GaussianNB(),
     'Support Vector Machine': SVC(probability=True, random_state=42)
