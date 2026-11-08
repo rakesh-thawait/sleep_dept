@@ -11,7 +11,7 @@ The underlying dataset features 1,000 empirical observations mapping lifestyle m
 - **Target Label (`sleep_debt_category`):** Multi-class category mapping objective debt risk profiles ('Severe Sleep Debt', 'Moderate Debt', 'Mild Deficit', 'Optimal Recovery').
 
 ## c. GitHub Repository Link
-[Insert Your Clickable GitHub Repository URL Here]
+https://github.com/rakesh-thawait/sleep_dept
 
 ## d. Models Used & Evaluation Comparison Matrix
 
